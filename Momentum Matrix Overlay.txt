@@ -1,0 +1,37 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © MonicaClaireW
+
+//@version=5
+indicator('Momentum Matrix', overlay=true)
+
+var table perfTable = table.new(position.top_right, 3, 2, border_width=3)
+
+LIGHTTRANSP = 90
+AVGTRANSP = 80
+HEAVYTRANSP = 70
+
+i_posColor = input(color.rgb(38, 166, 154), title='Positive Color')
+i_negColor = input(color.rgb(240, 83, 80), title='Negative Color')
+
+f_rateOfreturn(_v1, _v2) =>
+    (_v1 - _v2) * 100 / math.abs(_v2)
+
+f_performance(_barsBack) =>
+    _performance = request.security(syminfo.tickerid, '1D', f_rateOfreturn(close, close[_barsBack]))
+    _performance
+
+lastYearClose = request.security(syminfo.tickerid, '12M', close[1], lookahead=barmerge.lookahead_on)
+
+f_fillCell(_table, _column, _row, _value, _timeframe) =>
+    _c_color = _value >= 0 ? i_posColor : i_negColor
+    _transp = math.abs(_value) > 10 ? HEAVYTRANSP : math.abs(_value) > 5 ? AVGTRANSP : LIGHTTRANSP
+    _cellText = str.tostring(_value, '#.##') + '%\n' + _timeframe
+    table.cell(_table, _column, _row, _cellText, bgcolor=color.new(_c_color, _transp), text_color=_c_color, width=6)
+
+if barstate.islast
+    f_fillCell(perfTable, 0, 0, f_performance(21), '1M')
+    f_fillCell(perfTable, 1, 0, f_performance(63), '3M')
+    f_fillCell(perfTable, 2, 0, f_performance(126), '6M')
+    f_fillCell(perfTable, 0, 1, f_performance(189), '9M')
+    f_fillCell(perfTable, 1, 1, f_performance(252), '1Y')
+    f_fillCell(perfTable, 2, 1, f_rateOfreturn(close, lastYearClose), 'YTD')
